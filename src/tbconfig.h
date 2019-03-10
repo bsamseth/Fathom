@@ -2,6 +2,7 @@
  * tbconfig.h
  * (C) 2015 basil, all rights reserved,
  * Modifications Copyright 2016-2017 Jon Dart
+ * Modifications Copyright 2019 Bendik Samseth
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -9,10 +10,10 @@
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -67,12 +68,12 @@
  * Define TB_NO_STDBOOL if you do not want to use <stdbool.h> or it is not
  * available or unnecessary (e.g. C++).
  */
-/* #define TB_NO_STDBOOL */
+#define TB_NO_STDBOOL
 
 /*
  * Define TB_NO_THREADS if your program is not multi-threaded.
  */
-/* #define TB_NO_THREADS */
+#define TB_NO_THREADS
 
 /*
  * Define TB_NO_HELPER_API if you do not need the helper API.
@@ -93,10 +94,10 @@
 /* #define TB_NO_HW_POP_COUNT */
 
 /**
- * Define TB_USE_ATOMIC to use C++ 11 (or higher) <atomic> feature 
+ * Define TB_USE_ATOMIC to use C++ 11 (or higher) <atomic> feature
  * (recommended if using C++ and compiler supports it).
  */
-/* #define TB_USE_ATOMIC */
+#define TB_USE_ATOMIC
 
 /***************************************************************************/
 /* ENGINE INTEGRATION CONFIG                                               */
