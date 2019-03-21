@@ -9,10 +9,10 @@
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,29 +22,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "tbprobe.h"
+
 #include <assert.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "tbprobe.h"
+#define BOARD_RANK_1 0x00000000000000FFull
+#define BOARD_FILE_A 0x8080808080808080ull
+#define square(r, f) (8 * (r) + (f))
+#define rank(s) ((s) >> 3)
+#define file(s) ((s) &0x07)
+#define board(s) ((uint64_t) 1 << (s))
 
-#define BOARD_RANK_1            0x00000000000000FFull
-#define BOARD_FILE_A            0x8080808080808080ull
-#define square(r, f)            (8 * (r) + (f))
-#define rank(s)                 ((s) >> 3)
-#define file(s)                 ((s) & 0x07)
-#define board(s)                ((uint64_t)1 << (s))
-
-static const char *wdl_to_str[5] =
-{
-    "0-1",
-    "1/2-1/2",
-    "1/2-1/2",
-    "1/2-1/2",
-    "1-0"
-};
+static const char* wdl_to_str[5] = {"0-1", "1/2-1/2", "1/2-1/2", "1/2-1/2", "1-0"};
 
 struct pos
 {
@@ -56,27 +49,27 @@ struct pos
     uint64_t bishops;
     uint64_t knights;
     uint64_t pawns;
-    uint8_t castling;
-    uint8_t rule50;
-    uint8_t ep;
-    bool turn;
+    uint8_t  castling;
+    uint8_t  rule50;
+    uint8_t  ep;
+    bool     turn;
     uint16_t move;
 };
 
 /*
  * Parse a FEN string.
  */
-static bool parse_FEN(struct pos *pos, const char *fen)
+static bool parse_FEN(struct pos* pos, const char* fen)
 {
     uint64_t white = 0, black = 0;
     uint64_t kings, queens, rooks, bishops, knights, pawns;
     kings = queens = rooks = bishops = knights = pawns = 0;
-    bool turn;
+    bool     turn;
     unsigned rule50 = 0, move = 1;
-    unsigned ep = 0;
+    unsigned ep       = 0;
     unsigned castling = 0;
-    char c;
-    int r, f;
+    char     c;
+    int      r, f;
 
     if (fen == NULL)
         goto fen_parse_error;
@@ -87,7 +80,7 @@ static bool parse_FEN(struct pos *pos, const char *fen)
         {
             unsigned s = (r * 8) + f;
             uint64_t b = board(s);
-            c = *fen++;
+            c          = *fen++;
             switch (c)
             {
                 case 'k':
@@ -138,13 +131,12 @@ static bool parse_FEN(struct pos *pos, const char *fen)
                     pawns |= b;
                     white |= b;
                     continue;
-                default:
-                    break;
+                default: break;
             }
             if (c >= '1' && c <= '8')
             {
-                unsigned jmp = (unsigned)c - '0';
-                f += jmp-1;
+                unsigned jmp = (unsigned) c - '0';
+                f += jmp - 1;
                 continue;
             }
             goto fen_parse_error;
@@ -162,7 +154,7 @@ static bool parse_FEN(struct pos *pos, const char *fen)
     if (c != 'w' && c != 'b')
         goto fen_parse_error;
     turn = (c == 'w');
-    c = *fen++;
+    c    = *fen++;
     if (c != ' ')
         goto fen_parse_error;
     c = *fen++;
@@ -172,20 +164,14 @@ static bool parse_FEN(struct pos *pos, const char *fen)
         {
             switch (c)
             {
-                case 'K':
-                    castling |= TB_CASTLING_K; break;
-                case 'Q':
-                    castling |= TB_CASTLING_Q; break;
-                case 'k':
-                    castling |= TB_CASTLING_k; break;
-                case 'q':
-                    castling |= TB_CASTLING_q; break;
-                default:
-                    goto fen_parse_error;
+                case 'K': castling |= TB_CASTLING_K; break;
+                case 'Q': castling |= TB_CASTLING_Q; break;
+                case 'k': castling |= TB_CASTLING_k; break;
+                case 'q': castling |= TB_CASTLING_q; break;
+                default: goto fen_parse_error;
             }
             c = *fen++;
-        }
-        while (c != ' ');
+        } while (c != ' ');
         fen--;
     }
     c = *fen++;
@@ -195,11 +181,11 @@ static bool parse_FEN(struct pos *pos, const char *fen)
     if (c >= 'a' && c <= 'h')
     {
         unsigned file = c - 'a';
-        c = *fen++;
+        c             = *fen++;
         if (c != '3' && c != '6')
             goto fen_parse_error;
         unsigned rank = c - '1';
-        ep = square(rank, file);
+        ep            = square(rank, file);
         if (rank == 2 && turn)
             goto fen_parse_error;
         if (rank == 5 && !turn)
@@ -239,21 +225,21 @@ static bool parse_FEN(struct pos *pos, const char *fen)
     else
         clk[1] = '\0';
     rule50 = atoi(clk);
-    move = atoi(fen);
+    move   = atoi(fen);
 
-    pos->white = white;
-    pos->black = black;
-    pos->kings = kings;
-    pos->queens = queens;
-    pos->rooks = rooks;
-    pos->bishops = bishops;
-    pos->knights = knights;
-    pos->pawns = pawns;
+    pos->white    = white;
+    pos->black    = black;
+    pos->kings    = kings;
+    pos->queens   = queens;
+    pos->rooks    = rooks;
+    pos->bishops  = bishops;
+    pos->knights  = knights;
+    pos->pawns    = pawns;
     pos->castling = castling;
-    pos->rule50 = rule50;
-    pos->ep = ep;
-    pos->turn = turn;
-    pos->move = move;
+    pos->rule50   = rule50;
+    pos->ep       = ep;
+    pos->turn     = turn;
+    pos->move     = move;
     return true;
 
 fen_parse_error:
@@ -263,13 +249,13 @@ fen_parse_error:
 /*
  * Test if the king is in check.
  */
-static bool is_check(const struct pos *pos)
+static bool is_check(const struct pos* pos)
 {
-    uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->white: pos->black),
-             them = (pos->turn? pos->black: pos->white);
+    uint64_t occ  = pos->white | pos->black;
+    uint64_t us   = (pos->turn ? pos->white : pos->black),
+             them = (pos->turn ? pos->black : pos->white);
     uint64_t king = pos->kings & us;
-    unsigned sq = tb_lsb(king);
+    unsigned sq   = tb_lsb(king);
     uint64_t ratt = tb_rook_attacks(sq, occ);
     uint64_t batt = tb_bishop_attacks(sq, occ);
     if (ratt & (pos->rooks & them))
@@ -288,10 +274,10 @@ static bool is_check(const struct pos *pos)
 /*
  * Convert a move into a string.
  */
-static void move_to_str(const struct pos *pos, unsigned move, char *str)
+static void move_to_str(const struct pos* pos, unsigned move, char* str)
 {
     uint64_t occ      = pos->black | pos->white;
-    uint64_t us       = (pos->turn? pos->white: pos->black);
+    uint64_t us       = (pos->turn ? pos->white : pos->black);
     unsigned from     = TB_GET_FROM(move);
     unsigned to       = TB_GET_TO(move);
     unsigned r        = rank(from);
@@ -304,22 +290,22 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
     else if (b & pos->queens)
     {
         *str++ = 'Q';
-        att = tb_queen_attacks(to, occ) & us & pos->queens;
+        att    = tb_queen_attacks(to, occ) & us & pos->queens;
     }
     else if (b & pos->rooks)
     {
         *str++ = 'R';
-        att = tb_rook_attacks(to, occ) & us & pos->rooks;
+        att    = tb_rook_attacks(to, occ) & us & pos->rooks;
     }
     else if (b & pos->bishops)
     {
         *str++ = 'B';
-        att = tb_bishop_attacks(to, occ) & us & pos->bishops;
+        att    = tb_bishop_attacks(to, occ) & us & pos->bishops;
     }
     else if (b & pos->knights)
     {
         *str++ = 'N';
-        att = tb_knight_attacks(to) & us & pos->knights;
+        att    = tb_knight_attacks(to) & us & pos->knights;
     }
     else
         att = tb_pawn_attacks(to, !pos->turn) & us & pos->pawns;
@@ -329,7 +315,7 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
     {
         if (tb_pop_count(att & (BOARD_FILE_A >> f)) == 1)
             *str++ = 'a' + f;
-        else if (tb_pop_count(att & (BOARD_RANK_1 << (8*r))) == 1)
+        else if (tb_pop_count(att & (BOARD_RANK_1 << (8 * r))) == 1)
             *str++ = '1' + r;
         else
         {
@@ -346,14 +332,10 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
         *str++ = '=';
         switch (promotes)
         {
-            case TB_PROMOTES_QUEEN:
-                *str++ = 'Q'; break;
-            case TB_PROMOTES_ROOK:
-                *str++ = 'R'; break;
-            case TB_PROMOTES_BISHOP:
-                *str++ = 'B'; break;
-            case TB_PROMOTES_KNIGHT:
-                *str++ = 'N'; break;
+            case TB_PROMOTES_QUEEN: *str++ = 'Q'; break;
+            case TB_PROMOTES_ROOK: *str++ = 'R'; break;
+            case TB_PROMOTES_BISHOP: *str++ = 'B'; break;
+            case TB_PROMOTES_KNIGHT: *str++ = 'N'; break;
         }
     }
     *str++ = '\0';
@@ -362,15 +344,14 @@ static void move_to_str(const struct pos *pos, unsigned move, char *str)
 /*
  * Do a move.  Does not support castling.
  */
-#define do_bb_move(b, from, to)                                         \
-    (((b) & (~board(to)) & (~board(from))) |                            \
-        ((((b) >> (from)) & 0x1) << (to)))
-static void do_move(struct pos *pos, unsigned move)
+#define do_bb_move(b, from, to) \
+    (((b) & (~board(to)) & (~board(from))) | ((((b) >> (from)) & 0x1) << (to)))
+static void do_move(struct pos* pos, unsigned move)
 {
     unsigned from     = TB_GET_FROM(move);
     unsigned to       = TB_GET_TO(move);
     unsigned promotes = TB_GET_PROMOTES(move);
-    bool turn         = !pos->turn;
+    bool     turn     = !pos->turn;
     uint64_t white    = do_bb_move(pos->white, from, to);
     uint64_t black    = do_bb_move(pos->black, from, to);
     uint64_t kings    = do_bb_move(pos->kings, from, to);
@@ -386,29 +367,25 @@ static void do_move(struct pos *pos, unsigned move)
         pawns &= ~board(to);
         switch (promotes)
         {
-            case TB_PROMOTES_QUEEN:
-                queens |= board(to); break;
-            case TB_PROMOTES_ROOK:
-                rooks |= board(to); break;
-            case TB_PROMOTES_BISHOP:
-                bishops |= board(to); break;
-            case TB_PROMOTES_KNIGHT:
-                knights |= board(to); break;
+            case TB_PROMOTES_QUEEN: queens |= board(to); break;
+            case TB_PROMOTES_ROOK: rooks |= board(to); break;
+            case TB_PROMOTES_BISHOP: bishops |= board(to); break;
+            case TB_PROMOTES_KNIGHT: knights |= board(to); break;
         }
         rule50 = 0;
     }
     else if ((board(from) & pos->pawns) != 0)
     {
         rule50 = 0;
-        if (rank(from) == 1 && rank(to) == 3 &&
-            (tb_pawn_attacks(from+8, true) & pos->pawns & pos->black) != 0)
-            ep = from+8;
-        else if (rank(from) == 6 && rank(to) == 4 &&
-            (tb_pawn_attacks(from-8, false) & pos->pawns & pos->white) != 0)
-            ep = from-8;
+        if (rank(from) == 1 && rank(to) == 3
+            && (tb_pawn_attacks(from + 8, true) & pos->pawns & pos->black) != 0)
+            ep = from + 8;
+        else if (rank(from) == 6 && rank(to) == 4
+                 && (tb_pawn_attacks(from - 8, false) & pos->pawns & pos->white) != 0)
+            ep = from - 8;
         else if (TB_GET_EP(move))
         {
-            unsigned ep_to = (pos->turn? to-8: to+8);
+            unsigned ep_to   = (pos->turn ? to - 8 : to + 8);
             uint64_t ep_mask = ~board(ep_to);
             white &= ep_mask;
             black &= ep_mask;
@@ -436,7 +413,7 @@ static void do_move(struct pos *pos, unsigned move)
 /*
  * Print the pseudo "PV" for the given position.
  */
-static void print_PV(struct pos *pos)
+static void print_PV(struct pos* pos)
 {
     putchar('\n');
     bool first = true, check = false;
@@ -447,9 +424,19 @@ static void print_PV(struct pos *pos)
     }
     while (true)
     {
-        unsigned move = tb_probe_root(pos->white, pos->black, pos->kings,
-            pos->queens, pos->rooks, pos->bishops, pos->knights, pos->pawns,
-            pos->rule50, pos->castling, pos->ep, pos->turn, NULL);
+        unsigned move = tb_probe_root(pos->white,
+                                      pos->black,
+                                      pos->kings,
+                                      pos->queens,
+                                      pos->rooks,
+                                      pos->bishops,
+                                      pos->knights,
+                                      pos->pawns,
+                                      pos->rule50,
+                                      pos->castling,
+                                      pos->ep,
+                                      pos->turn,
+                                      NULL);
         if (move == TB_RESULT_FAILED)
         {
             printf("{TB probe failed}\n");
@@ -457,7 +444,7 @@ static void print_PV(struct pos *pos)
         }
         if (move == TB_RESULT_CHECKMATE)
         {
-            printf("# %s\n", (pos->turn? "0-1": "1-0"));
+            printf("# %s\n", (pos->turn ? "0-1" : "1-0"));
             return;
         }
         if (check)
@@ -484,8 +471,7 @@ static void print_PV(struct pos *pos)
 /*
  * Print a list of moves that match the WDL value.
  */
-static bool print_moves(struct pos *pos, unsigned *results, bool prev,
-    unsigned wdl)
+static bool print_moves(struct pos* pos, unsigned* results, bool prev, unsigned wdl)
 {
     for (unsigned i = 0; results[i] != TB_RESULT_FAILED; i++)
     {
@@ -504,7 +490,7 @@ static bool print_moves(struct pos *pos, unsigned *results, bool prev,
 /*
  * Print the help message.
  */
-static void print_help(const char *prog)
+static void print_help(const char* prog)
 {
     printf("\n");
     printf("usage: %s [--help] [--path=PATH] [--test] FEN\n\n", prog);
@@ -519,57 +505,64 @@ static void print_help(const char *prog)
     printf("\t\tPrint the result only.  Useful for scripts.\n");
     printf("\n");
     printf("DESCRIPTION:\n");
-    printf("\tThis program is a stand-alone Syzygy tablebase probe tool.  "
+    printf(
+        "\tThis program is a stand-alone Syzygy tablebase probe tool.  "
         "The\n");
-    printf("\tprogram takes as input a FEN string representation of a "
+    printf(
+        "\tprogram takes as input a FEN string representation of a "
         "chess\n");
-    printf("\tposition and outputs a PGN representation of the probe "
+    printf(
+        "\tposition and outputs a PGN representation of the probe "
         "result.\n");
     printf("\n");
-    printf("\tIn addition to the standard fields, the output PGN "
+    printf(
+        "\tIn addition to the standard fields, the output PGN "
         "represents the\n");
     printf("\tfollowing information:\n");
-    printf("\t- Result: \"1-0\" (white wins), \"1/2-1/2\" (draw), or "
+    printf(
+        "\t- Result: \"1-0\" (white wins), \"1/2-1/2\" (draw), or "
         "\"0-1\" (black wins)\n");
-    printf("\t- The Win-Draw-Loss (WDL) value for the next move: \"Win\", "
+    printf(
+        "\t- The Win-Draw-Loss (WDL) value for the next move: \"Win\", "
         "\"Draw\",\n");
-    printf("\t  \"Loss\", \"CursedWin\" (win but 50-move draw) or "
+    printf(
+        "\t  \"Loss\", \"CursedWin\" (win but 50-move draw) or "
         "\"BlessedLoss\" (loss\n");
     printf("\t  but 50-move draw)\n");
-    printf("\t- The Distance-To-Zero (DTZ) value (in plys) for the next "
+    printf(
+        "\t- The Distance-To-Zero (DTZ) value (in plys) for the next "
         "move\n");
     printf("\t- WinningMoves: The list of all winning moves\n");
     printf("\t- DrawingMoves: The list of all drawing moves\n");
     printf("\t- LosingMoves: The list of all losing moves\n");
     printf("\n");
-    printf("\tThe PGN contains a pseudo \"principle variation\" of "
+    printf(
+        "\tThe PGN contains a pseudo \"principle variation\" of "
         "Syzygy vs. Syzygy\n");
-    printf("\tfor the input position.  Each PV move is rational with "
+    printf(
+        "\tfor the input position.  Each PV move is rational with "
         "respect to\n");
-    printf("\tpreserving the WDL value.  The PV does not represent the "
+    printf(
+        "\tpreserving the WDL value.  The PV does not represent the "
         "shortest\n");
     printf("\tmate nor the most natural human moves.\n");
     printf("\n");
 }
 
-
 /*
  * Main:
  */
-#define OPTION_HELP     0
-#define OPTION_PATH     1
-#define OPTION_TEST     2
-int main(int argc, char **argv)
+#define OPTION_HELP 0
+#define OPTION_PATH 1
+#define OPTION_TEST 2
+int main(int argc, char** argv)
 {
-    static struct option long_options[] =
-    {
-        {"help", 0, 0, OPTION_HELP},
-        {"path", 1, 0, OPTION_PATH},
-        {"test", 0, 0, OPTION_TEST},
-        {NULL, 0, 0, 0}
-    };
-    char *path = NULL;
-    bool test = false;
+    static struct option long_options[] = {{"help", 0, 0, OPTION_HELP},
+                                           {"path", 1, 0, OPTION_PATH},
+                                           {"test", 0, 0, OPTION_TEST},
+                                           {NULL, 0, 0, 0}};
+    char*                path           = NULL;
+    bool                 test           = false;
     while (true)
     {
         int idx;
@@ -579,13 +572,11 @@ int main(int argc, char **argv)
         switch (opt)
         {
             case OPTION_PATH:
-                path = (char*)malloc(sizeof(char)*(strlen(optarg)+1));
+                path = (char*) malloc(sizeof(char) * (strlen(optarg) + 1));
                 assert(path != NULL);
-                strcpy(path,optarg);
+                strcpy(path, optarg);
                 break;
-            case OPTION_TEST:
-                test = true;
-                break;
+            case OPTION_TEST: test = true; break;
             case OPTION_HELP:
             default:
             usage:
@@ -593,9 +584,9 @@ int main(int argc, char **argv)
                 return EXIT_SUCCESS;
         }
     }
-    if (optind != argc-1)
+    if (optind != argc - 1)
         goto usage;
-    const char *fen = argv[optind];
+    const char* fen = argv[optind];
 
     // (0) init:
     if (path == NULL)
@@ -603,14 +594,15 @@ int main(int argc, char **argv)
     tb_init(path);
     if (TB_LARGEST == 0)
     {
-        fprintf(stderr, "error: unable to initialize tablebase; no tablebase "
-            "files found\n");
+        fprintf(stderr,
+                "error: unable to initialize tablebase; no tablebase "
+                "files found\n");
         exit(EXIT_FAILURE);
     }
 
     // (1) parse the FEN:
-    struct pos pos0;
-    struct pos *pos = &pos0;
+    struct pos  pos0;
+    struct pos* pos = &pos0;
     if (!parse_FEN(pos, fen))
     {
         fprintf(stderr, "error: unable to parse FEN string \"%s\"\n", fen);
@@ -620,18 +612,32 @@ int main(int argc, char **argv)
     // (2) probe the TB:
     if (tb_pop_count(pos->white | pos->black) > TB_LARGEST)
     {
-        fprintf(stderr, "error: unable to probe tablebase; FEN string \"%s\" "
-            "has too many pieces (max=%u)\n", fen, TB_LARGEST);
+        fprintf(stderr,
+                "error: unable to probe tablebase; FEN string \"%s\" "
+                "has too many pieces (max=%u)\n",
+                fen,
+                TB_LARGEST);
         exit(EXIT_FAILURE);
     }
     unsigned results[TB_MAX_MOVES];
-    unsigned res = tb_probe_root(pos->white, pos->black, pos->kings,
-        pos->queens, pos->rooks, pos->bishops, pos->knights, pos->pawns,
-        pos->rule50, pos->castling, pos->ep, pos->turn, results);
+    unsigned res = tb_probe_root(pos->white,
+                                 pos->black,
+                                 pos->kings,
+                                 pos->queens,
+                                 pos->rooks,
+                                 pos->bishops,
+                                 pos->knights,
+                                 pos->pawns,
+                                 pos->rule50,
+                                 pos->castling,
+                                 pos->ep,
+                                 pos->turn,
+                                 results);
     if (res == TB_RESULT_FAILED)
     {
-        fprintf(stderr, "error: unable to probe tablebase; position "
-            "invalid, illegal or not in tablebase\n");
+        fprintf(stderr,
+                "error: unable to probe tablebase; position "
+                "invalid, illegal or not in tablebase\n");
         exit(EXIT_FAILURE);
     }
 
@@ -639,24 +645,18 @@ int main(int argc, char **argv)
     unsigned wdl = TB_GET_WDL(res);
     if (test)
     {
-        printf("%s\n", wdl_to_str[(pos->turn? wdl: 4-wdl)]);
+        printf("%s\n", wdl_to_str[(pos->turn ? wdl : 4 - wdl)]);
         return 0;
     }
-    const char *wdl_to_name_str[5] =
-    {
-        "Loss",
-        "BlessedLoss",
-        "Draw",
-        "CursedWin",
-        "Win"
-    };
+    const char* wdl_to_name_str[5]
+        = {"Loss", "BlessedLoss", "Draw", "CursedWin", "Win"};
     printf("[Event \"\"]\n");
     printf("[Site \"\"]\n");
     printf("[Date \"??\"]\n");
     printf("[Round \"-\"]\n");
     printf("[White \"Syzygy\"]\n");
     printf("[Black \"Syzygy\"]\n");
-    printf("[Result \"%s\"]\n", wdl_to_str[(pos->turn? wdl: 4-wdl)]);
+    printf("[Result \"%s\"]\n", wdl_to_str[(pos->turn ? wdl : 4 - wdl)]);
     printf("[FEN \"%s\"]\n", fen);
     printf("[WDL \"%s\"]\n", wdl_to_name_str[wdl]);
     printf("[DTZ \"%u\"]\n", TB_GET_DTZ(res));
@@ -678,4 +678,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-

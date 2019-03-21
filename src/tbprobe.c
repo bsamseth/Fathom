@@ -27,60 +27,60 @@
 #include <stdlib.h>
 
 #if defined(_MSC_VER)
-#include <intrin.h>
+#    include <intrin.h>
 #endif
 
 #include "tbprobe.h"
 
-#define WHITE_KING              (TB_WPAWN + 5)
-#define WHITE_QUEEN             (TB_WPAWN + 4)
-#define WHITE_ROOK              (TB_WPAWN + 3)
-#define WHITE_BISHOP            (TB_WPAWN + 2)
-#define WHITE_KNIGHT            (TB_WPAWN + 1)
-#define WHITE_PAWN              TB_WPAWN
-#define BLACK_KING              (TB_BPAWN + 5)
-#define BLACK_QUEEN             (TB_BPAWN + 4)
-#define BLACK_ROOK              (TB_BPAWN + 3)
-#define BLACK_BISHOP            (TB_BPAWN + 2)
-#define BLACK_KNIGHT            (TB_BPAWN + 1)
-#define BLACK_PAWN              TB_BPAWN
+#define WHITE_KING (TB_WPAWN + 5)
+#define WHITE_QUEEN (TB_WPAWN + 4)
+#define WHITE_ROOK (TB_WPAWN + 3)
+#define WHITE_BISHOP (TB_WPAWN + 2)
+#define WHITE_KNIGHT (TB_WPAWN + 1)
+#define WHITE_PAWN TB_WPAWN
+#define BLACK_KING (TB_BPAWN + 5)
+#define BLACK_QUEEN (TB_BPAWN + 4)
+#define BLACK_ROOK (TB_BPAWN + 3)
+#define BLACK_BISHOP (TB_BPAWN + 2)
+#define BLACK_KNIGHT (TB_BPAWN + 1)
+#define BLACK_PAWN TB_BPAWN
 
-#define PRIME_WHITE_QUEEN       11811845319353239651ull
-#define PRIME_WHITE_ROOK        10979190538029446137ull
-#define PRIME_WHITE_BISHOP      12311744257139811149ull
-#define PRIME_WHITE_KNIGHT      15202887380319082783ull
-#define PRIME_WHITE_PAWN        17008651141875982339ull
-#define PRIME_BLACK_QUEEN       15484752644942473553ull
-#define PRIME_BLACK_ROOK        18264461213049635989ull
-#define PRIME_BLACK_BISHOP      15394650811035483107ull
-#define PRIME_BLACK_KNIGHT      13469005675588064321ull
-#define PRIME_BLACK_PAWN        11695583624105689831ull
+#define PRIME_WHITE_QUEEN 11811845319353239651ull
+#define PRIME_WHITE_ROOK 10979190538029446137ull
+#define PRIME_WHITE_BISHOP 12311744257139811149ull
+#define PRIME_WHITE_KNIGHT 15202887380319082783ull
+#define PRIME_WHITE_PAWN 17008651141875982339ull
+#define PRIME_BLACK_QUEEN 15484752644942473553ull
+#define PRIME_BLACK_ROOK 18264461213049635989ull
+#define PRIME_BLACK_BISHOP 15394650811035483107ull
+#define PRIME_BLACK_KNIGHT 13469005675588064321ull
+#define PRIME_BLACK_PAWN 11695583624105689831ull
 
-#define BOARD_RANK_EDGE         0x8181818181818181ull
-#define BOARD_FILE_EDGE         0xFF000000000000FFull
-#define BOARD_EDGE              (BOARD_RANK_EDGE | BOARD_FILE_EDGE)
-#define BOARD_RANK_1            0x00000000000000FFull
-#define BOARD_FILE_A            0x8080808080808080ull
+#define BOARD_RANK_EDGE 0x8181818181818181ull
+#define BOARD_FILE_EDGE 0xFF000000000000FFull
+#define BOARD_EDGE (BOARD_RANK_EDGE | BOARD_FILE_EDGE)
+#define BOARD_RANK_1 0x00000000000000FFull
+#define BOARD_FILE_A 0x8080808080808080ull
 
-#define KEY_KvK                 0
+#define KEY_KvK 0
 
-#define BEST_NONE               0xFFFF
-#define SCORE_ILLEGAL           0x7FFF
+#define BEST_NONE 0xFFFF
+#define SCORE_ILLEGAL 0x7FFF
 
 #undef TB_SOFTWARE_POP_COUNT
 
 #if defined(TB_CUSTOM_POP_COUNT)
-#define popcount(x) TB_CUSTOM_POP_COUNT(x)
+#    define popcount(x) TB_CUSTOM_POP_COUNT(x)
 #elif defined(TB_NO_HW_POP_COUNT)
-#define TB_SOFTWARE_POP_COUNT
-#elif defined (__GNUC__) && defined(__x86_64__) && defined(__SSE4_2__)
-#include <popcntintrin.h>
-#define popcount(x)             _mm_popcnt_u64((x))
+#    define TB_SOFTWARE_POP_COUNT
+#elif defined(__GNUC__) && defined(__x86_64__) && defined(__SSE4_2__)
+#    include <popcntintrin.h>
+#    define popcount(x) _mm_popcnt_u64((x))
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500) && defined(_M_AMD64)
-#include <nmmintrin.h>
-#define popcount(x)             _mm_popcnt_u64((x))
+#    include <nmmintrin.h>
+#    define popcount(x) _mm_popcnt_u64((x))
 #else
-#define TB_SOFTWARE_POP_COUNT
+#    define TB_SOFTWARE_POP_COUNT
 #endif
 
 #ifdef TB_SOFTWARE_POP_COUNT
@@ -94,23 +94,20 @@ static inline unsigned tb_software_popcount(uint64_t x)
     x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0full;
     return (x * 0x0101010101010101ull) >> 56;
 }
-#define popcount(x) tb_software_popcount(x)
+#    define popcount(x) tb_software_popcount(x)
 #endif
 
-#define poplsb(x)               ((x) & ((x) - 1))
+#define poplsb(x) ((x) & ((x) -1))
 
-#define make_move(promote, from, to)                                    \
-    ((((promote) & 0x7) << 12) | (((from) & 0x3F) << 6) | ((to) & 0x3F))
-#define move_from(move)                                                 \
-    (((move) >> 6) & 0x3F)
-#define move_to(move)                                                   \
-    ((move) & 0x3F)
-#define move_promotes(move)                                             \
-    (((move) >> 12) & 0x7)
+#define make_move(promote, from, to) \
+    ((((promote) &0x7) << 12) | (((from) &0x3F) << 6) | ((to) &0x3F))
+#define move_from(move) (((move) >> 6) & 0x3F)
+#define move_to(move) ((move) &0x3F)
+#define move_promotes(move) (((move) >> 12) & 0x7)
 
-#define MAX_MOVES               TB_MAX_MOVES
-#define MOVE_STALEMATE          0xFFFF
-#define MOVE_CHECKMATE          0xFFFE
+#define MAX_MOVES TB_MAX_MOVES
+#define MOVE_STALEMATE 0xFFFF
+#define MOVE_CHECKMATE 0xFFFE
 
 struct pos
 {
@@ -122,72 +119,80 @@ struct pos
     uint64_t bishops;
     uint64_t knights;
     uint64_t pawns;
-    uint8_t rule50;
-    uint8_t ep;
-    bool turn;
+    uint8_t  rule50;
+    uint8_t  ep;
+    bool     turn;
 };
 
-static bool do_move(struct pos *pos, const struct pos *pos0, uint16_t move);
-static int probe_dtz(const struct pos *pos, int *success);
+static bool do_move(struct pos* pos, const struct pos* pos0, uint16_t move);
+static int  probe_dtz(const struct pos* pos, int* success);
 
 unsigned TB_LARGEST = 0;
 #include "tbcore.c"
 
-#define rank(s)                 ((s) >> 3)
-#define file(s)                 ((s) & 0x07)
-#define board(s)                ((uint64_t)1 << (s))
+#define rank(s) ((s) >> 3)
+#define file(s) ((s) &0x07)
+#define board(s) ((uint64_t) 1 << (s))
 #ifdef TB_CUSTOM_LSB
-#define lsb(b) TB_CUSTOM_LSB(b)
+#    define lsb(b) TB_CUSTOM_LSB(b)
 #else
-#if defined(__GNUC__)
-static inline unsigned lsb(uint64_t b) {
+#    if defined(__GNUC__)
+static inline unsigned lsb(uint64_t b)
+{
     assert(b != 0);
-    return __builtin_ffsll(b)-1;
+    return __builtin_ffsll(b) - 1;
 }
-#elif defined(_MSC_VER)
-static inline unsigned lsb(uint64_t b) {
+#    elif defined(_MSC_VER)
+static inline unsigned lsb(uint64_t b)
+{
     assert(b != 0);
     DWORD index;
-#ifdef _WIN64
-    _BitScanForward64(&index,b);
-    return (unsigned)index;
-#else
-    if (b & 0xffffffffULL) {
-      _BitScanForward(&index,(unsigned long)(b & 0xffffffffULL));
-      return (unsigned)index;
+#        ifdef _WIN64
+    _BitScanForward64(&index, b);
+    return (unsigned) index;
+#        else
+    if (b & 0xffffffffULL)
+    {
+        _BitScanForward(&index, (unsigned long) (b & 0xffffffffULL));
+        return (unsigned) index;
     }
-    else {
-      _BitScanForward(&index,(unsigned long)(b >> 32));
-      return 32 + (unsigned)index;
+    else
+    {
+        _BitScanForward(&index, (unsigned long) (b >> 32));
+        return 32 + (unsigned) index;
     }
-#endif
+#        endif
 }
-#else
+#    else
 /* not a compiler/architecture with recognized builtins */
-static uint32_t get_bit32(uint64_t x) {
-  return (uint32_t)(((int32_t)(x))&-((int32_t)(x)));
+static uint32_t get_bit32(uint64_t x)
+{
+    return (uint32_t)(((int32_t)(x)) & -((int32_t)(x)));
 }
 static const unsigned MAGIC32 = 0xe89b2be;
-static const uint32_t MagicTable32[32] = {31,0,9,1,10,20,13,2,7,11,21,23,17,14,3,25,30,8,19,12,6,22,16,24,29,18,5,15,28,4,27,26};
-static unsigned lsb(uint64_t b) {
-  if (b & 0xffffffffULL)
-    return MagicTable32[(get_bit32(b & 0xffffffffULL)*MAGIC32)>>27];
-  else
-    return MagicTable32[(get_bit32(b >> 32)*MAGIC32)>>27]+32;
+static const uint32_t MagicTable32[32]
+    = {31, 0, 9,  1,  10, 20, 13, 2,  7,  11, 21, 23, 17, 14, 3,  25,
+       30, 8, 19, 12, 6,  22, 16, 24, 29, 18, 5,  15, 28, 4,  27, 26};
+static unsigned lsb(uint64_t b)
+{
+    if (b & 0xffffffffULL)
+        return MagicTable32[(get_bit32(b & 0xffffffffULL) * MAGIC32) >> 27];
+    else
+        return MagicTable32[(get_bit32(b >> 32) * MAGIC32) >> 27] + 32;
 }
-#endif
+#    endif
 #endif
 
-#define square(r, f)            (8 * (r) + (f))
+#define square(r, f) (8 * (r) + (f))
 
 #ifdef TB_KING_ATTACKS
-#define king_attacks(s)         TB_KING_ATTACKS(s)
-#define king_attacks_init()     /* NOP */
-#else       /* TB_KING_ATTACKS */
+#    define king_attacks(s) TB_KING_ATTACKS(s)
+#    define king_attacks_init() /* NOP */
+#else                           /* TB_KING_ATTACKS */
 
 static uint64_t king_attacks_table[64];
 
-#define king_attacks(s)         king_attacks_table[(s)]
+#    define king_attacks(s) king_attacks_table[(s)]
 
 static void king_attacks_init(void)
 {
@@ -197,107 +202,101 @@ static void king_attacks_init(void)
         unsigned f = file(s);
         uint64_t b = 0;
         if (r != 0 && f != 0)
-            b |= board(square(r-1, f-1));
+            b |= board(square(r - 1, f - 1));
         if (r != 0)
-            b |= board(square(r-1, f));
+            b |= board(square(r - 1, f));
         if (r != 0 && f != 7)
-            b |= board(square(r-1, f+1));
+            b |= board(square(r - 1, f + 1));
         if (f != 7)
-            b |= board(square(r, f+1));
+            b |= board(square(r, f + 1));
         if (r != 7 && f != 7)
-            b |= board(square(r+1, f+1));
+            b |= board(square(r + 1, f + 1));
         if (r != 7)
-            b |= board(square(r+1, f));
+            b |= board(square(r + 1, f));
         if (r != 7 && f != 0)
-            b |= board(square(r+1, f-1));
+            b |= board(square(r + 1, f - 1));
         if (f != 0)
-            b |= board(square(r, f-1));
+            b |= board(square(r, f - 1));
         king_attacks_table[s] = b;
     }
 }
 
-#endif      /* TB_KING_ATTACKS */
+#endif /* TB_KING_ATTACKS */
 
 #ifdef TB_KNIGHT_ATTACKS
-#define knight_attacks(s)       TB_KNIGHT_ATTACKS(s)
-#define knight_attacks_init()   /* NOP */
-#else       /* TB_KNIGHT_ATTACKS */
+#    define knight_attacks(s) TB_KNIGHT_ATTACKS(s)
+#    define knight_attacks_init() /* NOP */
+#else                             /* TB_KNIGHT_ATTACKS */
 
 static uint64_t knight_attacks_table[64];
 
-#define knight_attacks(s)       knight_attacks_table[(s)]
+#    define knight_attacks(s) knight_attacks_table[(s)]
 
 static void knight_attacks_init(void)
 {
     for (unsigned s = 0; s < 64; s++)
     {
-        int r1, r = rank(s);
-        int f1, f = file(s);
+        int      r1, r = rank(s);
+        int      f1, f = file(s);
         uint64_t b = 0;
-        r1 = r-1; f1 = f-2;
+        r1         = r - 1;
+        f1         = f - 2;
         if (r1 >= 0 && f1 >= 0)
             b |= board(square(r1, f1));
-        r1 = r-1; f1 = f+2;
+        r1 = r - 1;
+        f1 = f + 2;
         if (r1 >= 0 && f1 <= 7)
             b |= board(square(r1, f1));
-        r1 = r-2; f1 = f-1;
+        r1 = r - 2;
+        f1 = f - 1;
         if (r1 >= 0 && f1 >= 0)
             b |= board(square(r1, f1));
-        r1 = r-2; f1 = f+1;
+        r1 = r - 2;
+        f1 = f + 1;
         if (r1 >= 0 && f1 <= 7)
             b |= board(square(r1, f1));
-        r1 = r+1; f1 = f-2;
+        r1 = r + 1;
+        f1 = f - 2;
         if (r1 <= 7 && f1 >= 0)
             b |= board(square(r1, f1));
-        r1 = r+1; f1 = f+2;
+        r1 = r + 1;
+        f1 = f + 2;
         if (r1 <= 7 && f1 <= 7)
             b |= board(square(r1, f1));
-        r1 = r+2; f1 = f-1;
+        r1 = r + 2;
+        f1 = f - 1;
         if (r1 <= 7 && f1 >= 0)
             b |= board(square(r1, f1));
-        r1 = r+2; f1 = f+1;
+        r1 = r + 2;
+        f1 = f + 1;
         if (r1 <= 7 && f1 <= 7)
             b |= board(square(r1, f1));
         knight_attacks_table[s] = b;
     }
 }
 
-#endif      /* TB_KNIGHT_ATTACKS */
+#endif /* TB_KNIGHT_ATTACKS */
 
 #ifdef TB_BISHOP_ATTACKS
-#define bishop_attacks(s, occ)  TB_BISHOP_ATTACKS(s, occ)
-#define bishop_attacks_init()   /* NOP */
-#else       /* TB_BISHOP_ATTACKS */
+#    define bishop_attacks(s, occ) TB_BISHOP_ATTACKS(s, occ)
+#    define bishop_attacks_init() /* NOP */
+#else                             /* TB_BISHOP_ATTACKS */
 
 static uint64_t diag_attacks_table[64][64];
 static uint64_t anti_attacks_table[64][64];
 
-static const unsigned square2diag_table[64] =
-{
-    0,  1,  2,  3,  4,  5,  6,  7,
-    14, 0,  1,  2,  3,  4,  5,  6,
-    13, 14, 0,  1,  2,  3,  4,  5,
-    12, 13, 14, 0,  1,  2,  3,  4,
-    11, 12, 13, 14, 0,  1,  2,  3,
-    10, 11, 12, 13, 14, 0,  1,  2,
-    9,  10, 11, 12, 13, 14, 0,  1,
-    8,  9,  10, 11, 12, 13, 14, 0
-};
+static const unsigned square2diag_table[64]
+    = {0,  1,  2,  3,  4,  5,  6, 7, 14, 0,  1,  2,  3,  4,  5,  6,
+       13, 14, 0,  1,  2,  3,  4, 5, 12, 13, 14, 0,  1,  2,  3,  4,
+       11, 12, 13, 14, 0,  1,  2, 3, 10, 11, 12, 13, 14, 0,  1,  2,
+       9,  10, 11, 12, 13, 14, 0, 1, 8,  9,  10, 11, 12, 13, 14, 0};
 
-static const unsigned square2anti_table[64] =
-{
-    8,  9,  10, 11, 12, 13, 14, 0,
-    9,  10, 11, 12, 13, 14, 0,  1,
-    10, 11, 12, 13, 14, 0,  1,  2,
-    11, 12, 13, 14, 0,  1,  2,  3,
-    12, 13, 14, 0,  1,  2,  3,  4,
-    13, 14, 0,  1,  2,  3,  4,  5,
-    14, 0,  1,  2,  3,  4,  5,  6,
-    0,  1,  2,  3,  4,  5,  6,  7
-};
+static const unsigned square2anti_table[64]
+    = {8, 9, 10, 11, 12, 13, 14, 0, 9, 10, 11, 12, 13, 14, 0, 1, 10, 11, 12, 13, 14, 0,
+       1, 2, 11, 12, 13, 14, 0,  1, 2, 3,  12, 13, 14, 0,  1, 2, 3,  4,  13, 14, 0,  1,
+       2, 3, 4,  5,  14, 0,  1,  2, 3, 4,  5,  6,  0,  1,  2, 3, 4,  5,  6,  7};
 
-static const uint64_t diag2board_table[15] =
-{
+static const uint64_t diag2board_table[15] = {
     0x8040201008040201ull,
     0x0080402010080402ull,
     0x0000804020100804ull,
@@ -315,8 +314,7 @@ static const uint64_t diag2board_table[15] =
     0x4020100804020100ull,
 };
 
-static const uint64_t anti2board_table[15] =
-{
+static const uint64_t anti2board_table[15] = {
     0x0102040810204080ull,
     0x0204081020408000ull,
     0x0408102040800000ull,
@@ -338,7 +336,7 @@ static inline size_t diag2index(uint64_t b)
 {
     b *= 0x0101010101010101ull;
     b >>= 57;
-    return (size_t)b;
+    return (size_t) b;
 }
 
 static inline size_t anti2index(uint64_t b)
@@ -346,19 +344,19 @@ static inline size_t anti2index(uint64_t b)
     return diag2index(b);
 }
 
-#define diag(s)                 square2diag_table[(s)]
-#define anti(s)                 square2anti_table[(s)]
-#define diag2board(d)           diag2board_table[(d)]
-#define anti2board(a)           anti2board_table[(a)]
+#    define diag(s) square2diag_table[(s)]
+#    define anti(s) square2anti_table[(s)]
+#    define diag2board(d) diag2board_table[(d)]
+#    define anti2board(a) anti2board_table[(a)]
 
 static uint64_t bishop_attacks(unsigned sq, uint64_t occ)
 {
     occ &= ~board(sq);
     unsigned d = diag(sq), a = anti(sq);
-    uint64_t d_occ = occ & (diag2board(d) & ~BOARD_EDGE);
-    uint64_t a_occ = occ & (anti2board(a) & ~BOARD_EDGE);
-    size_t d_idx = diag2index(d_occ);
-    size_t a_idx = anti2index(a_occ);
+    uint64_t d_occ     = occ & (diag2board(d) & ~BOARD_EDGE);
+    uint64_t a_occ     = occ & (anti2board(a) & ~BOARD_EDGE);
+    size_t   d_idx     = diag2index(d_occ);
+    size_t   a_idx     = anti2index(a_occ);
     uint64_t d_attacks = diag_attacks_table[sq][d_idx];
     uint64_t a_attacks = anti_attacks_table[sq][a_idx];
     return d_attacks | a_attacks;
@@ -371,8 +369,8 @@ static void bishop_attacks_init(void)
         unsigned idx1 = idx << 1;
         for (unsigned s = 0; s < 64; s++)
         {
-            int r = rank(s);
-            int f = file(s);
+            int      r = rank(s);
+            int      f = file(s);
             uint64_t b = 0;
             for (int i = -1; f + i >= 0 && r + i >= 0; i--)
             {
@@ -397,8 +395,8 @@ static void bishop_attacks_init(void)
         unsigned idx1 = idx << 1;
         for (unsigned s = 0; s < 64; s++)
         {
-            int r = rank(s);
-            int f = file(s);
+            int      r = rank(s);
+            int      f = file(s);
             uint64_t b = 0;
             for (int i = -1; f + i >= 0 && r - i <= 7; i--)
             {
@@ -419,12 +417,12 @@ static void bishop_attacks_init(void)
     }
 }
 
-#endif      /* TB_BISHOP_ATTACKS */
+#endif /* TB_BISHOP_ATTACKS */
 
 #ifdef TB_ROOK_ATTACKS
-#define rook_attacks(s, occ)    TB_ROOK_ATTACKS(s, occ)
-#define rook_attacks_init()     /* NOP */
-#else       /* TB_ROOK_ATTACKS */
+#    define rook_attacks(s, occ) TB_ROOK_ATTACKS(s, occ)
+#    define rook_attacks_init() /* NOP */
+#else                           /* TB_ROOK_ATTACKS */
 
 static uint64_t rank_attacks_table[64][64];
 static uint64_t file_attacks_table[64][64];
@@ -433,7 +431,7 @@ static inline size_t rank2index(uint64_t b, unsigned r)
 {
     b >>= (8 * r);
     b >>= 1;
-    return (size_t)b;
+    return (size_t) b;
 }
 
 static inline size_t file2index(uint64_t b, unsigned f)
@@ -442,20 +440,20 @@ static inline size_t file2index(uint64_t b, unsigned f)
     b *= 0x0102040810204080ull;
     b >>= 56;
     b >>= 1;
-    return (size_t)b;
+    return (size_t) b;
 }
 
-#define rank2board(r)           (0xFFull << (8 * (r)))
-#define file2board(f)           (0x0101010101010101ull << (f))
+#    define rank2board(r) (0xFFull << (8 * (r)))
+#    define file2board(f) (0x0101010101010101ull << (f))
 
 static uint64_t rook_attacks(unsigned sq, uint64_t occ)
 {
     occ &= ~board(sq);
     unsigned r = rank(sq), f = file(sq);
-    uint64_t r_occ = occ & (rank2board(r) & ~BOARD_RANK_EDGE);
-    uint64_t f_occ = occ & (file2board(f) & ~BOARD_FILE_EDGE);
-    size_t r_idx = rank2index(r_occ, r);
-    size_t f_idx = file2index(f_occ, f);
+    uint64_t r_occ     = occ & (rank2board(r) & ~BOARD_RANK_EDGE);
+    uint64_t f_occ     = occ & (file2board(f) & ~BOARD_FILE_EDGE);
+    size_t   r_idx     = rank2index(r_occ, r);
+    size_t   f_idx     = file2index(f_occ, f);
     uint64_t r_attacks = rank_attacks_table[sq][r_idx];
     uint64_t f_attacks = file_attacks_table[sq][f_idx];
     return r_attacks | f_attacks;
@@ -471,25 +469,23 @@ static void rook_attacks_init(void)
             uint64_t b = 0;
             if (f > 0)
             {
-                int i = f-1;
+                int i = f - 1;
                 do
                 {
                     occ = (1 << i);
                     b |= board(square(0, i));
                     i--;
-                }
-                while (!(idx1 & occ) && i >= 0);
+                } while (!(idx1 & occ) && i >= 0);
             }
             if (f < 7)
             {
-                int i = f+1;
+                int i = f + 1;
                 do
                 {
                     occ = (1 << i);
                     b |= board(square(0, i));
                     i++;
-                }
-                while (!(idx1 & occ) && i <= 7);
+                } while (!(idx1 & occ) && i <= 7);
             }
             for (int r = 0; r <= 7; r++)
             {
@@ -506,25 +502,23 @@ static void rook_attacks_init(void)
             uint64_t b = 0;
             if (r > 0)
             {
-                int i = r-1;
+                int i = r - 1;
                 do
                 {
                     occ = (1 << i);
                     b |= board(square(i, 0));
                     i--;
-                }
-                while (!(idx1 & occ) && i >= 0);
+                } while (!(idx1 & occ) && i >= 0);
             }
             if (r < 7)
             {
-                int i = r+1;
+                int i = r + 1;
                 do
                 {
                     occ = (1 << i);
                     b |= board(square(i, 0));
                     i++;
-                }
-                while (!(idx1 & occ) && i <= 7);
+                } while (!(idx1 & occ) && i <= 7);
             }
             for (int f = 0; f <= 7; f++)
             {
@@ -535,23 +529,23 @@ static void rook_attacks_init(void)
     }
 }
 
-#endif      /* TB_ROOK_ATTACKS */
+#endif /* TB_ROOK_ATTACKS */
 
 #ifdef TB_QUEEN_ATTACKS
-#define queen_attacks(s, occ)   TB_QUEEN_ATTACKS(s, occ)
-#else       /* TB_QUEEN_ATTACKS */
-#define queen_attacks(s, occ)   \
-    (rook_attacks((s), (occ)) | bishop_attacks((s), (occ)))
-#endif      /* TB_QUEEN_ATTACKS */
+#    define queen_attacks(s, occ) TB_QUEEN_ATTACKS(s, occ)
+#else /* TB_QUEEN_ATTACKS */
+#    define queen_attacks(s, occ) \
+        (rook_attacks((s), (occ)) | bishop_attacks((s), (occ)))
+#endif /* TB_QUEEN_ATTACKS */
 
 #ifdef TB_PAWN_ATTACKS
-#define pawn_attacks(s, c)      TB_PAWN_ATTACKS(s, c)
-#define pawn_attacks_init()     /* NOP */
-#else       /* TB_PAWN_ATTACKS */
+#    define pawn_attacks(s, c) TB_PAWN_ATTACKS(s, c)
+#    define pawn_attacks_init() /* NOP */
+#else                           /* TB_PAWN_ATTACKS */
 
 static uint64_t pawn_attacks_table[2][64];
 
-#define pawn_attacks(s, c)      pawn_attacks_table[(c)][(s)]
+#    define pawn_attacks(s, c) pawn_attacks_table[(c)][(s)]
 
 static void pawn_attacks_init(void)
 {
@@ -564,9 +558,9 @@ static void pawn_attacks_init(void)
         if (r != 7)
         {
             if (f != 0)
-                b |= board(square(r+1, f-1));
+                b |= board(square(r + 1, f - 1));
             if (f != 7)
-                b |= board(square(r+1, f+1));
+                b |= board(square(r + 1, f + 1));
         }
         pawn_attacks_table[1][s] = b;
 
@@ -574,25 +568,25 @@ static void pawn_attacks_init(void)
         if (r != 0)
         {
             if (f != 0)
-                b |= board(square(r-1, f-1));
+                b |= board(square(r - 1, f - 1));
             if (f != 7)
-                b |= board(square(r-1, f+1));
+                b |= board(square(r - 1, f + 1));
         }
         pawn_attacks_table[0][s] = b;
     }
 }
 
-#endif      /* TB_PAWN_ATTACKS */
+#endif /* TB_PAWN_ATTACKS */
 
-static void prt_str(const struct pos *pos, char *str, bool mirror)
+static void prt_str(const struct pos* pos, char* str, bool mirror)
 {
     uint64_t white = pos->white, black = pos->black;
-    int i;
+    int      i;
     if (mirror)
     {
         uint64_t tmp = white;
-        white = black;
-        black = tmp;
+        white        = black;
+        black        = tmp;
     }
     *str++ = 'K';
     for (i = popcount(white & pos->queens); i > 0; i--)
@@ -623,84 +617,71 @@ static void prt_str(const struct pos *pos, char *str, bool mirror)
 /*
  * Given a position, produce a 64-bit material signature key.
  */
-static uint64_t calc_key(const struct pos *pos, bool mirror)
+static uint64_t calc_key(const struct pos* pos, bool mirror)
 {
     uint64_t white = pos->white, black = pos->black;
     if (mirror)
     {
         uint64_t tmp = white;
-        white = black;
-        black = tmp;
+        white        = black;
+        black        = tmp;
     }
-    return popcount(white & pos->queens)  * PRIME_WHITE_QUEEN +
-           popcount(white & pos->rooks)   * PRIME_WHITE_ROOK +
-           popcount(white & pos->bishops) * PRIME_WHITE_BISHOP +
-           popcount(white & pos->knights) * PRIME_WHITE_KNIGHT +
-           popcount(white & pos->pawns)   * PRIME_WHITE_PAWN +
-           popcount(black & pos->queens)  * PRIME_BLACK_QUEEN +
-           popcount(black & pos->rooks)   * PRIME_BLACK_ROOK +
-           popcount(black & pos->bishops) * PRIME_BLACK_BISHOP +
-           popcount(black & pos->knights) * PRIME_BLACK_KNIGHT +
-           popcount(black & pos->pawns)   * PRIME_BLACK_PAWN;
+    return popcount(white & pos->queens) * PRIME_WHITE_QUEEN
+           + popcount(white & pos->rooks) * PRIME_WHITE_ROOK
+           + popcount(white & pos->bishops) * PRIME_WHITE_BISHOP
+           + popcount(white & pos->knights) * PRIME_WHITE_KNIGHT
+           + popcount(white & pos->pawns) * PRIME_WHITE_PAWN
+           + popcount(black & pos->queens) * PRIME_BLACK_QUEEN
+           + popcount(black & pos->rooks) * PRIME_BLACK_ROOK
+           + popcount(black & pos->bishops) * PRIME_BLACK_BISHOP
+           + popcount(black & pos->knights) * PRIME_BLACK_KNIGHT
+           + popcount(black & pos->pawns) * PRIME_BLACK_PAWN;
 }
 
-static uint64_t calc_key_from_pcs(int *pcs, int mirror)
+static uint64_t calc_key_from_pcs(int* pcs, int mirror)
 {
-    mirror = (mirror? 8: 0);
-    return pcs[WHITE_QUEEN ^ mirror] * PRIME_WHITE_QUEEN +
-           pcs[WHITE_ROOK ^ mirror] * PRIME_WHITE_ROOK +
-           pcs[WHITE_BISHOP ^ mirror] * PRIME_WHITE_BISHOP +
-           pcs[WHITE_KNIGHT ^ mirror] * PRIME_WHITE_KNIGHT +
-           pcs[WHITE_PAWN ^ mirror] * PRIME_WHITE_PAWN +
-           pcs[BLACK_QUEEN ^ mirror] * PRIME_BLACK_QUEEN +
-           pcs[BLACK_ROOK ^ mirror] * PRIME_BLACK_ROOK +
-           pcs[BLACK_BISHOP ^ mirror] * PRIME_BLACK_BISHOP +
-           pcs[BLACK_KNIGHT ^ mirror] * PRIME_BLACK_KNIGHT +
-           pcs[BLACK_PAWN ^ mirror] * PRIME_BLACK_PAWN;
+    mirror = (mirror ? 8 : 0);
+    return pcs[WHITE_QUEEN ^ mirror] * PRIME_WHITE_QUEEN
+           + pcs[WHITE_ROOK ^ mirror] * PRIME_WHITE_ROOK
+           + pcs[WHITE_BISHOP ^ mirror] * PRIME_WHITE_BISHOP
+           + pcs[WHITE_KNIGHT ^ mirror] * PRIME_WHITE_KNIGHT
+           + pcs[WHITE_PAWN ^ mirror] * PRIME_WHITE_PAWN
+           + pcs[BLACK_QUEEN ^ mirror] * PRIME_BLACK_QUEEN
+           + pcs[BLACK_ROOK ^ mirror] * PRIME_BLACK_ROOK
+           + pcs[BLACK_BISHOP ^ mirror] * PRIME_BLACK_BISHOP
+           + pcs[BLACK_KNIGHT ^ mirror] * PRIME_BLACK_KNIGHT
+           + pcs[BLACK_PAWN ^ mirror] * PRIME_BLACK_PAWN;
 }
 
-static uint64_t get_pieces(const struct pos *pos, uint8_t code)
+static uint64_t get_pieces(const struct pos* pos, uint8_t code)
 {
     switch (code)
     {
-        case WHITE_KING:
-            return pos->kings & pos->white;
-        case WHITE_QUEEN:
-            return pos->queens & pos->white;
-        case WHITE_ROOK:
-            return pos->rooks & pos->white;
-        case WHITE_BISHOP:
-            return pos->bishops & pos->white;
-        case WHITE_KNIGHT:
-            return pos->knights & pos->white;
-        case WHITE_PAWN:
-            return pos->pawns & pos->white;
-        case BLACK_KING:
-            return pos->kings & pos->black;
-        case BLACK_QUEEN:
-            return pos->queens & pos->black;
-        case BLACK_ROOK:
-            return pos->rooks & pos->black;
-        case BLACK_BISHOP:
-            return pos->bishops & pos->black;
-        case BLACK_KNIGHT:
-            return pos->knights & pos->black;
-        case BLACK_PAWN:
-            return pos->pawns & pos->black;
-        default:
-            return 0;   // Dummy.
+        case WHITE_KING: return pos->kings & pos->white;
+        case WHITE_QUEEN: return pos->queens & pos->white;
+        case WHITE_ROOK: return pos->rooks & pos->white;
+        case WHITE_BISHOP: return pos->bishops & pos->white;
+        case WHITE_KNIGHT: return pos->knights & pos->white;
+        case WHITE_PAWN: return pos->pawns & pos->white;
+        case BLACK_KING: return pos->kings & pos->black;
+        case BLACK_QUEEN: return pos->queens & pos->black;
+        case BLACK_ROOK: return pos->rooks & pos->black;
+        case BLACK_BISHOP: return pos->bishops & pos->black;
+        case BLACK_KNIGHT: return pos->knights & pos->black;
+        case BLACK_PAWN: return pos->pawns & pos->black;
+        default: return 0;  // Dummy.
     }
 }
 
-static int probe_wdl_table(const struct pos *pos, int *success)
+static int probe_wdl_table(const struct pos* pos, int* success)
 {
-    struct TBEntry *ptr;
-    struct TBHashEntry *ptr2;
-    uint64_t idx;
-    uint64_t key;
-    int i;
-    uint8_t res;
-    int p[TBPIECES];
+    struct TBEntry*     ptr;
+    struct TBHashEntry* ptr2;
+    uint64_t            idx;
+    uint64_t            key;
+    int                 i;
+    uint8_t             res;
+    int                 p[TBPIECES];
 
     // Obtain the position's material signature key.
     key = calc_key(pos, false);
@@ -732,17 +713,17 @@ static int probe_wdl_table(const struct pos *pos, int *success)
             if (!init_table_wdl(ptr, str))
             {
                 ptr2[i].key = 0ULL;
-                *success = 0;
+                *success    = 0;
                 UNLOCK(TB_MUTEX);
                 return 0;
             }
             // Memory barrier to ensure ptr->ready = 1 is not reordered.
 #if !defined(__cplusplus) || !defined(TB_USE_ATOMIC)
-#ifdef __GNUC__
-            __asm__ __volatile__ ("" ::: "memory");
-#elif defined(_MSC_VER)
+#    ifdef __GNUC__
+            __asm__ __volatile__("" ::: "memory");
+#    elif defined(_MSC_VER)
             MemoryBarrier();
-#endif
+#    endif
 #endif
             ptr->ready = 1;
         }
@@ -755,20 +736,20 @@ static int probe_wdl_table(const struct pos *pos, int *success)
         if (key != ptr->key)
         {
             cmirror = 8;
-            mirror = 0x38;
-            bside = pos->turn;
+            mirror  = 0x38;
+            bside   = pos->turn;
         }
         else
         {
             cmirror = mirror = 0;
-            bside = !pos->turn;
+            bside            = !pos->turn;
         }
     }
     else
     {
-        cmirror = (pos->turn? 0: 8);
-        mirror = (pos->turn? 0: 0x38);
-        bside = 0;
+        cmirror = (pos->turn ? 0 : 8);
+        mirror  = (pos->turn ? 0 : 0x38);
+        bside   = 0;
     }
 
     // p[i] is to contain the square 0-63 (A1-H8) for a piece of type
@@ -776,15 +757,15 @@ static int probe_wdl_table(const struct pos *pos, int *success)
     // Pieces of the same type are guaranteed to be consecutive.
     if (!ptr->has_pawns)
     {
-        struct TBEntry_piece *entry = (struct TBEntry_piece *)ptr;
-        uint8_t *pc = entry->pieces[bside];
-        for (i = 0; i < entry->num; )
+        struct TBEntry_piece* entry = (struct TBEntry_piece*) ptr;
+        uint8_t*              pc    = entry->pieces[bside];
+        for (i = 0; i < entry->num;)
         {
             uint64_t bb = get_pieces(pos, pc[i] ^ cmirror);
             do
             {
                 p[i++] = lsb(bb);
-                bb = poplsb(bb);
+                bb     = poplsb(bb);
             } while (bb);
         }
         idx = encode_piece(entry, entry->norm[bside], p, entry->factor[bside]);
@@ -792,39 +773,40 @@ static int probe_wdl_table(const struct pos *pos, int *success)
     }
     else
     {
-        struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
-        int k = entry->file[0].pieces[0][0] ^ cmirror;
-        uint64_t bb = get_pieces(pos, k);
-        i = 0;
-        do {
+        struct TBEntry_pawn* entry = (struct TBEntry_pawn*) ptr;
+        int                  k     = entry->file[0].pieces[0][0] ^ cmirror;
+        uint64_t             bb    = get_pieces(pos, k);
+        i                          = 0;
+        do
+        {
             p[i++] = lsb(bb) ^ mirror;
-            bb = poplsb(bb);
+            bb     = poplsb(bb);
         } while (bb);
-        int f = pawn_file(entry, p);
-        uint8_t *pc = entry->file[f].pieces[bside];
-        for (; i < entry->num; )
+        int      f  = pawn_file(entry, p);
+        uint8_t* pc = entry->file[f].pieces[bside];
+        for (; i < entry->num;)
         {
             bb = get_pieces(pos, pc[i] ^ cmirror);
             do
             {
                 p[i++] = lsb(bb) ^ mirror;
-                bb = poplsb(bb);
+                bb     = poplsb(bb);
             } while (bb);
         }
-        idx = encode_pawn(entry, entry->file[f].norm[bside], p,
-            entry->file[f].factor[bside]);
+        idx = encode_pawn(
+            entry, entry->file[f].norm[bside], p, entry->file[f].factor[bside]);
         res = decompress_pairs(entry->file[f].precomp[bside], idx);
     }
 
-    return ((int)res) - 2;
+    return ((int) res) - 2;
 }
 
-static int probe_dtz_table(const struct pos *pos, int wdl, int *success)
+static int probe_dtz_table(const struct pos* pos, int wdl, int* success)
 {
-    struct TBEntry *ptr;
-    uint64_t idx;
-    int i, res;
-    int p[TBPIECES];
+    struct TBEntry* ptr;
+    uint64_t        idx;
+    int             i, res;
+    int             p[TBPIECES];
 
     // Obtain the position's material signature key.
     uint64_t key = calc_key(pos, false);
@@ -845,7 +827,7 @@ static int probe_dtz_table(const struct pos *pos, int wdl, int *success)
         }
         else
         {
-            struct TBHashEntry *ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
+            struct TBHashEntry* ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
             for (i = 0; i < HSHMAX; i++)
             {
                 if (ptr2[i].key == key)
@@ -857,11 +839,11 @@ static int probe_dtz_table(const struct pos *pos, int wdl, int *success)
                 return 0;
             }
             ptr = ptr2[i].ptr;
-            char str[16];
+            char       str[16];
             const bool mirror = (ptr->key != key);
             prt_str(pos, str, mirror);
             if (DTZ_table[DTZ_ENTRIES - 1].entry)
-                free_dtz_entry(DTZ_table[DTZ_ENTRIES-1].entry);
+                free_dtz_entry(DTZ_table[DTZ_ENTRIES - 1].entry);
             for (i = DTZ_ENTRIES - 1; i > 0; i--)
                 DTZ_table[i] = DTZ_table[i - 1];
             uint64_t key1 = calc_key(pos, mirror);
@@ -883,43 +865,42 @@ static int probe_dtz_table(const struct pos *pos, int wdl, int *success)
         if (key != ptr->key)
         {
             cmirror = 8;
-            mirror = 0x38;
-            bside = pos->turn;
+            mirror  = 0x38;
+            bside   = pos->turn;
         }
         else
         {
             cmirror = mirror = 0;
-            bside = !pos->turn;
+            bside            = !pos->turn;
         }
     }
     else
     {
-        cmirror = (pos->turn? 0: 8);
-        mirror = (pos->turn? 0: 0x38);
-        bside = 0;
+        cmirror = (pos->turn ? 0 : 8);
+        mirror  = (pos->turn ? 0 : 0x38);
+        bside   = 0;
     }
 
     if (!ptr->has_pawns)
     {
-        struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr;
+        struct DTZEntry_piece* entry = (struct DTZEntry_piece*) ptr;
         if ((entry->flags & 1) != bside && !entry->symmetric)
         {
             *success = -1;
             return 0;
         }
-        uint8_t *pc = entry->pieces;
+        uint8_t* pc = entry->pieces;
         for (i = 0; i < entry->num;)
         {
             uint64_t bb = get_pieces(pos, pc[i] ^ cmirror);
             do
             {
                 p[i++] = lsb(bb);
-                bb = poplsb(bb);
-            }
-            while (bb);
+                bb     = poplsb(bb);
+            } while (bb);
         }
-        idx = encode_piece((struct TBEntry_piece *)entry, entry->norm, p,
-            entry->factor);
+        idx = encode_piece(
+            (struct TBEntry_piece*) entry, entry->norm, p, entry->factor);
         res = decompress_pairs(entry->precomp, idx);
 
         if (entry->flags & 2)
@@ -929,35 +910,35 @@ static int probe_dtz_table(const struct pos *pos, int wdl, int *success)
     }
     else
     {
-        struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
-        int k = entry->file[0].pieces[0] ^ cmirror;
-        uint64_t bb = get_pieces(pos, k);
-        i = 0;
+        struct DTZEntry_pawn* entry = (struct DTZEntry_pawn*) ptr;
+        int                   k     = entry->file[0].pieces[0] ^ cmirror;
+        uint64_t              bb    = get_pieces(pos, k);
+        i                           = 0;
         do
         {
             p[i++] = lsb(bb) ^ mirror;
-            bb = poplsb(bb);
-        }
-        while (bb);
-        int f = pawn_file((struct TBEntry_pawn *)entry, p);
+            bb     = poplsb(bb);
+        } while (bb);
+        int f = pawn_file((struct TBEntry_pawn*) entry, p);
         if ((entry->flags[f] & 1) != bside)
         {
             *success = -1;
             return 0;
         }
-        uint8_t *pc = entry->file[f].pieces;
+        uint8_t* pc = entry->file[f].pieces;
         for (; i < entry->num;)
         {
             bb = get_pieces(pos, pc[i] ^ cmirror);
             do
             {
                 p[i++] = lsb(bb) ^ mirror;
-                bb = poplsb(bb);
-            }
-            while (bb);
+                bb     = poplsb(bb);
+            } while (bb);
         }
-        idx = encode_pawn((struct TBEntry_pawn *)entry, entry->file[f].norm,
-            p, entry->file[f].factor);
+        idx = encode_pawn((struct TBEntry_pawn*) entry,
+                          entry->file[f].norm,
+                          p,
+                          entry->file[f].factor);
         res = decompress_pairs(entry->file[f].precomp, idx);
 
         if (entry->flags[f] & 2)
@@ -969,8 +950,7 @@ static int probe_dtz_table(const struct pos *pos, int wdl, int *success)
     return res;
 }
 
-static uint16_t *add_move(uint16_t *moves, bool promotes, unsigned from,
-    unsigned to)
+static uint16_t* add_move(uint16_t* moves, bool promotes, unsigned from, unsigned to)
 {
     if (!promotes)
         *moves++ = make_move(TB_PROMOTES_NONE, from, to);
@@ -987,19 +967,18 @@ static uint16_t *add_move(uint16_t *moves, bool promotes, unsigned from,
 /*
  * Generate all captures or promotions.
  */
-static uint16_t *gen_captures_or_promotions(const struct pos *pos,
-    uint16_t *moves)
+static uint16_t* gen_captures_or_promotions(const struct pos* pos, uint16_t* moves)
 {
-    uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->white: pos->black),
-             them = (pos->turn? pos->black: pos->white);
+    uint64_t occ  = pos->white | pos->black;
+    uint64_t us   = (pos->turn ? pos->white : pos->black),
+             them = (pos->turn ? pos->black : pos->white);
     uint64_t b, att;
     {
         unsigned from = lsb(pos->kings & us);
         for (att = king_attacks(from) & them; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->queens; b; b = poplsb(b))
@@ -1008,7 +987,7 @@ static uint16_t *gen_captures_or_promotions(const struct pos *pos,
         for (att = queen_attacks(from, occ) & them; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->rooks; b; b = poplsb(b))
@@ -1017,7 +996,7 @@ static uint16_t *gen_captures_or_promotions(const struct pos *pos,
         for (att = rook_attacks(from, occ) & them; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->bishops; b; b = poplsb(b))
@@ -1026,7 +1005,7 @@ static uint16_t *gen_captures_or_promotions(const struct pos *pos,
         for (att = bishop_attacks(from, occ) & them; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->knights; b; b = poplsb(b))
@@ -1035,23 +1014,22 @@ static uint16_t *gen_captures_or_promotions(const struct pos *pos,
         for (att = knight_attacks(from) & them; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->pawns; b; b = poplsb(b))
     {
         unsigned from = lsb(b);
-        att = pawn_attacks(from, pos->turn);
+        att           = pawn_attacks(from, pos->turn);
         if (pos->ep != 0 && ((att & board(pos->ep)) != 0))
         {
             unsigned to = pos->ep;
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
         for (att = att & them; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, (rank(to) == 7 || rank(to) == 0), from,
-                to);
+            moves       = add_move(moves, (rank(to) == 7 || rank(to) == 0), from, to);
         }
         if (pos->turn && rank(from) == 6)
         {
@@ -1072,31 +1050,29 @@ static uint16_t *gen_captures_or_promotions(const struct pos *pos,
 /*
  * Generate all non-capture pawn moves and promotions.
  */
-static uint16_t *gen_pawn_quiets_or_promotions(const struct pos *pos,
-    uint16_t *moves)
+static uint16_t* gen_pawn_quiets_or_promotions(const struct pos* pos, uint16_t* moves)
 {
     uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->white: pos->black);
+    uint64_t us  = (pos->turn ? pos->white : pos->black);
     uint64_t b, att;
 
     for (b = us & pos->pawns; b; b = poplsb(b))
     {
         unsigned from = lsb(b);
-        unsigned next = from + (pos->turn? 8: -8);
-        att = 0;
+        unsigned next = from + (pos->turn ? 8 : -8);
+        att           = 0;
         if ((board(next) & occ) == 0)
         {
             att |= board(next);
-            unsigned next2 = from + (pos->turn? 16: -16);
-            if ((pos->turn? rank(from) == 1: rank(from) == 6) &&
-                    ((board(next2) & occ) == 0))
+            unsigned next2 = from + (pos->turn ? 16 : -16);
+            if ((pos->turn ? rank(from) == 1 : rank(from) == 6)
+                && ((board(next2) & occ) == 0))
                 att |= board(next2);
         }
         for (; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, (rank(to) == 7 || rank(to) == 0), from,
-                to);
+            moves       = add_move(moves, (rank(to) == 7 || rank(to) == 0), from, to);
         }
     }
     return moves;
@@ -1105,13 +1081,13 @@ static uint16_t *gen_pawn_quiets_or_promotions(const struct pos *pos,
 /*
  * Generate all en passant captures.
  */
-static uint16_t *gen_pawn_ep_captures(const struct pos *pos, uint16_t *moves)
+static uint16_t* gen_pawn_ep_captures(const struct pos* pos, uint16_t* moves)
 {
     if (pos->ep == 0)
         return moves;
     uint64_t ep = board(pos->ep);
     unsigned to = pos->ep;
-    uint64_t us = (pos->turn? pos->white: pos->black);
+    uint64_t us = (pos->turn ? pos->white : pos->black);
     uint64_t b;
     for (b = us & pos->pawns; b; b = poplsb(b))
     {
@@ -1125,11 +1101,11 @@ static uint16_t *gen_pawn_ep_captures(const struct pos *pos, uint16_t *moves)
 /*
  * Generate all moves.
  */
-static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
+static uint16_t* gen_moves(const struct pos* pos, uint16_t* moves)
 {
-    uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->white: pos->black),
-             them = (pos->turn? pos->black: pos->white);
+    uint64_t occ  = pos->white | pos->black;
+    uint64_t us   = (pos->turn ? pos->white : pos->black),
+             them = (pos->turn ? pos->black : pos->white);
     uint64_t b, att;
 
     {
@@ -1137,7 +1113,7 @@ static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
         for (att = king_attacks(from) & ~us; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->queens; b; b = poplsb(b))
@@ -1146,7 +1122,7 @@ static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
         for (att = queen_attacks(from, occ) & ~us; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->rooks; b; b = poplsb(b))
@@ -1155,7 +1131,7 @@ static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
         for (att = rook_attacks(from, occ) & ~us; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->bishops; b; b = poplsb(b))
@@ -1164,7 +1140,7 @@ static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
         for (att = bishop_attacks(from, occ) & ~us; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->knights; b; b = poplsb(b))
@@ -1173,33 +1149,32 @@ static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
         for (att = knight_attacks(from) & ~us; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
     }
     for (b = us & pos->pawns; b; b = poplsb(b))
     {
         unsigned from = lsb(b);
-        unsigned next = from + (pos->turn? 8: -8);
-        att = pawn_attacks(from, pos->turn);
+        unsigned next = from + (pos->turn ? 8 : -8);
+        att           = pawn_attacks(from, pos->turn);
         if (pos->ep != 0 && ((att & board(pos->ep)) != 0))
         {
             unsigned to = pos->ep;
-            moves = add_move(moves, false, from, to);
+            moves       = add_move(moves, false, from, to);
         }
         att &= them;
         if ((board(next) & occ) == 0)
         {
             att |= board(next);
-            unsigned next2 = from + (pos->turn? 16: -16);
-            if ((pos->turn? rank(from) == 1: rank(from) == 6) &&
-                    ((board(next2) & occ) == 0))
+            unsigned next2 = from + (pos->turn ? 16 : -16);
+            if ((pos->turn ? rank(from) == 1 : rank(from) == 6)
+                && ((board(next2) & occ) == 0))
                 att |= board(next2);
         }
         for (; att; att = poplsb(att))
         {
             unsigned to = lsb(att);
-            moves = add_move(moves, (rank(to) == 7 || rank(to) == 0), from,
-                to);
+            moves       = add_move(moves, (rank(to) == 7 || rank(to) == 0), from, to);
         }
     }
     return moves;
@@ -1208,11 +1183,11 @@ static uint16_t *gen_moves(const struct pos *pos, uint16_t *moves)
 /*
  * Test if the given move is an en passant capture.
  */
-static bool is_en_passant(const struct pos *pos, uint16_t move)
+static bool is_en_passant(const struct pos* pos, uint16_t move)
 {
     uint16_t from = move_from(move);
     uint16_t to   = move_to(move);
-    uint64_t us = (pos->turn? pos->white: pos->black);
+    uint64_t us   = (pos->turn ? pos->white : pos->black);
     if (pos->ep == 0)
         return false;
     if (to != pos->ep)
@@ -1226,11 +1201,11 @@ static bool is_en_passant(const struct pos *pos, uint16_t move)
  * Test if the given position is legal.
  * (Pawns on backrank? Can the king be captured?)
  */
-static bool is_legal(const struct pos *pos)
+static bool is_legal(const struct pos* pos)
 {
-    uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->black: pos->white),
-             them = (pos->turn? pos->white: pos->black);
+    uint64_t occ  = pos->white | pos->black;
+    uint64_t us   = (pos->turn ? pos->black : pos->white),
+             them = (pos->turn ? pos->white : pos->black);
     uint64_t king = pos->kings & us;
     if (!king)
         return false;
@@ -1255,13 +1230,13 @@ static bool is_legal(const struct pos *pos)
 /*
  * Test if the king is in check.
  */
-static bool is_check(const struct pos *pos)
+static bool is_check(const struct pos* pos)
 {
-    uint64_t occ = pos->white | pos->black;
-    uint64_t us = (pos->turn? pos->white: pos->black),
-             them = (pos->turn? pos->black: pos->white);
+    uint64_t occ  = pos->white | pos->black;
+    uint64_t us   = (pos->turn ? pos->white : pos->black),
+             them = (pos->turn ? pos->black : pos->white);
     uint64_t king = pos->kings & us;
-    unsigned sq = lsb(king);
+    unsigned sq   = lsb(king);
     uint64_t ratt = rook_attacks(sq, occ);
     uint64_t batt = bishop_attacks(sq, occ);
     if (ratt & (pos->rooks & them))
@@ -1280,13 +1255,13 @@ static bool is_check(const struct pos *pos)
 /*
  * Test if the king is in checkmate.
  */
-static bool is_mate(const struct pos *pos)
+static bool is_mate(const struct pos* pos)
 {
     if (!is_check(pos))
         return false;
-    uint16_t moves0[MAX_MOVES];
-    uint16_t *moves = moves0;
-    uint16_t *end = gen_moves(pos, moves);
+    uint16_t  moves0[MAX_MOVES];
+    uint16_t* moves = moves0;
+    uint16_t* end   = gen_moves(pos, moves);
     for (; moves < end; moves++)
     {
         struct pos pos1;
@@ -1299,7 +1274,7 @@ static bool is_mate(const struct pos *pos)
 /*
  * Test if the position is valid.
  */
-static bool is_valid(const struct pos *pos)
+static bool is_valid(const struct pos* pos)
 {
     if (popcount(pos->kings) != 2)
         return false;
@@ -1341,60 +1316,55 @@ static bool is_valid(const struct pos *pos)
         return false;
     if (pos->pawns & BOARD_FILE_EDGE)
         return false;
-    if ((pos->white | pos->black) !=
-        (pos->kings | pos->queens | pos->rooks | pos->bishops | pos->knights |
-         pos->pawns))
+    if ((pos->white | pos->black)
+        != (pos->kings | pos->queens | pos->rooks | pos->bishops | pos->knights
+            | pos->pawns))
         return false;
     return is_legal(pos);
 }
 
-#define do_bb_move(b, from, to)                                         \
-    (((b) & (~board(to)) & (~board(from))) |                            \
-        ((((b) >> (from)) & 0x1) << (to)))
+#define do_bb_move(b, from, to) \
+    (((b) & (~board(to)) & (~board(from))) | ((((b) >> (from)) & 0x1) << (to)))
 
-static bool do_move(struct pos *pos, const struct pos *pos0, uint16_t move)
+static bool do_move(struct pos* pos, const struct pos* pos0, uint16_t move)
 {
-    unsigned from = move_from(move);
-    unsigned to = move_to(move);
+    unsigned from     = move_from(move);
+    unsigned to       = move_to(move);
     unsigned promotes = move_promotes(move);
-    pos->turn = !pos0->turn;
-    pos->white = do_bb_move(pos0->white, from, to);
-    pos->black = do_bb_move(pos0->black, from, to);
-    pos->kings = do_bb_move(pos0->kings, from, to);
-    pos->queens = do_bb_move(pos0->queens, from, to);
-    pos->rooks = do_bb_move(pos0->rooks, from, to);
-    pos->bishops = do_bb_move(pos0->bishops, from, to);
-    pos->knights = do_bb_move(pos0->knights, from, to);
-    pos->pawns = do_bb_move(pos0->pawns, from, to);
-    pos->ep = 0;
+    pos->turn         = !pos0->turn;
+    pos->white        = do_bb_move(pos0->white, from, to);
+    pos->black        = do_bb_move(pos0->black, from, to);
+    pos->kings        = do_bb_move(pos0->kings, from, to);
+    pos->queens       = do_bb_move(pos0->queens, from, to);
+    pos->rooks        = do_bb_move(pos0->rooks, from, to);
+    pos->bishops      = do_bb_move(pos0->bishops, from, to);
+    pos->knights      = do_bb_move(pos0->knights, from, to);
+    pos->pawns        = do_bb_move(pos0->pawns, from, to);
+    pos->ep           = 0;
     if (promotes != TB_PROMOTES_NONE)
     {
-        pos->pawns &= ~board(to);       // Promotion
+        pos->pawns &= ~board(to);  // Promotion
         switch (promotes)
         {
-            case TB_PROMOTES_QUEEN:
-                pos->queens |= board(to); break;
-            case TB_PROMOTES_ROOK:
-                pos->rooks |= board(to); break;
-            case TB_PROMOTES_BISHOP:
-                pos->bishops |= board(to); break;
-            case TB_PROMOTES_KNIGHT:
-                pos->knights |= board(to); break;
+            case TB_PROMOTES_QUEEN: pos->queens |= board(to); break;
+            case TB_PROMOTES_ROOK: pos->rooks |= board(to); break;
+            case TB_PROMOTES_BISHOP: pos->bishops |= board(to); break;
+            case TB_PROMOTES_KNIGHT: pos->knights |= board(to); break;
         }
         pos->rule50 = 0;
     }
     else if ((board(from) & pos0->pawns) != 0)
     {
-        pos->rule50 = 0;                // Pawn move
-        if (rank(from) == 1 && rank(to) == 3 &&
-            (pawn_attacks(from+8, true) & pos0->pawns & pos0->black) != 0)
-            pos->ep = from+8;
-        else if (rank(from) == 6 && rank(to) == 4 &&
-            (pawn_attacks(from-8, false) & pos0->pawns & pos0->white) != 0)
-            pos->ep = from-8;
+        pos->rule50 = 0;  // Pawn move
+        if (rank(from) == 1 && rank(to) == 3
+            && (pawn_attacks(from + 8, true) & pos0->pawns & pos0->black) != 0)
+            pos->ep = from + 8;
+        else if (rank(from) == 6 && rank(to) == 4
+                 && (pawn_attacks(from - 8, false) & pos0->pawns & pos0->white) != 0)
+            pos->ep = from - 8;
         else if (to == pos0->ep)
         {
-            unsigned ep_to = (pos0->turn? to-8: to+8);
+            unsigned ep_to   = (pos0->turn ? to - 8 : to + 8);
             uint64_t ep_mask = ~board(ep_to);
             pos->white &= ep_mask;
             pos->black &= ep_mask;
@@ -1402,20 +1372,20 @@ static bool do_move(struct pos *pos, const struct pos *pos0, uint16_t move)
         }
     }
     else if ((board(to) & (pos0->white | pos0->black)) != 0)
-        pos->rule50 = 0;                // Capture
+        pos->rule50 = 0;  // Capture
     else
-        pos->rule50 = pos0->rule50 + 1; // Normal move
+        pos->rule50 = pos0->rule50 + 1;  // Normal move
     if (!is_legal(pos))
         return false;
     return true;
 }
 
-static int probe_ab(const struct pos *pos, int alpha, int beta, int *success)
+static int probe_ab(const struct pos* pos, int alpha, int beta, int* success)
 {
-    int v;
-    uint16_t moves0[64];
-    uint16_t *moves = moves0;
-    uint16_t *end = gen_captures_or_promotions(pos, moves);
+    int       v;
+    uint16_t  moves0[64];
+    uint16_t* moves = moves0;
+    uint16_t* end   = gen_captures_or_promotions(pos, moves);
     for (; moves < end; moves++)
     {
         if (is_en_passant(pos, *moves))
@@ -1452,10 +1422,10 @@ static int probe_ab(const struct pos *pos, int alpha, int beta, int *success)
     }
 }
 
-static int probe_wdl(const struct pos *pos, int *success)
+static int probe_wdl(const struct pos* pos, int* success)
 {
     *success = 1;
-    int v = probe_ab(pos, -2, 2, success);
+    int v    = probe_ab(pos, -2, 2, success);
     if (*success == 0)
         return 0;
 
@@ -1464,10 +1434,10 @@ static int probe_wdl(const struct pos *pos, int *success)
         return v;
 
     // Now handle en passant.
-    int v1 = -3;
-    uint16_t moves0[2];      // Max=2 possible en-passant captures.
-    uint16_t *moves = moves0;
-    uint16_t *end = gen_pawn_ep_captures(pos, moves);
+    int       v1 = -3;
+    uint16_t  moves0[2];  // Max=2 possible en-passant captures.
+    uint16_t* moves = moves0;
+    uint16_t* end   = gen_pawn_ep_captures(pos, moves);
     for (; moves < end; moves++)
     {
         struct pos pos1;
@@ -1486,10 +1456,10 @@ static int probe_wdl(const struct pos *pos, int *success)
         else if (v == 0)
         {
             // Check whether there is at least one legal non-ep move.
-            uint16_t moves0[MAX_MOVES];
-            uint16_t *moves = moves0;
-            uint16_t *end = gen_moves(pos, moves);
-            bool found = false;
+            uint16_t  moves0[MAX_MOVES];
+            uint16_t* moves = moves0;
+            uint16_t* end   = gen_moves(pos, moves);
+            bool      found = false;
             for (; moves < end; moves++)
             {
                 if (is_en_passant(pos, *moves))
@@ -1502,14 +1472,14 @@ static int probe_wdl(const struct pos *pos, int *success)
                 }
             }
             if (!found)
-                v = v1;     // Forced to play the losing ep capture.
+                v = v1;  // Forced to play the losing ep capture.
         }
     }
 
     return v;
 }
 
-static int probe_dtz_no_ep(const struct pos *pos, int *success)
+static int probe_dtz_no_ep(const struct pos* pos, int* success)
 {
     int wdl, dtz;
     wdl = probe_ab(pos, -2, 2, success);
@@ -1518,7 +1488,7 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
     if (*success == 2)
         return wdl == 2 ? 1 : 101;
 
-    uint16_t moves0[MAX_MOVES];
+    uint16_t  moves0[MAX_MOVES];
     uint16_t *moves = moves0, *end = NULL;
 
     if (wdl > 0)
@@ -1531,13 +1501,12 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
             struct pos pos1;
             if (!do_move(&pos1, pos, *moves))
                 continue;
-            int v = (pos1.ep == 0?
-                -probe_ab(&pos1, -2, -wdl + 1, success):
-                -probe_wdl(&pos1, success));
+            int v = (pos1.ep == 0 ? -probe_ab(&pos1, -2, -wdl + 1, success)
+                                  : -probe_wdl(&pos1, success));
             if (*success == 0)
                 return 0;
             if (v == wdl)
-                return (v == 2? 1: 101);
+                return (v == 2 ? 1 : 101);
         }
     }
 
@@ -1546,14 +1515,14 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
     {
         if (wdl & 1)
             dtz += 100;
-        return (wdl >= 0? dtz: -dtz);
+        return (wdl >= 0 ? dtz : -dtz);
     }
 
     if (wdl > 0)
     {
         int best = BEST_NONE;
-        moves = moves0;
-        end = gen_moves(pos, moves);
+        moves    = moves0;
+        end      = gen_moves(pos, moves);
         for (; moves < end; moves++)
         {
             struct pos pos1;
@@ -1573,10 +1542,10 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
     else
     {
         int best = -1;
-        end = gen_moves(pos, moves);
+        end      = gen_moves(pos, moves);
         for (; moves < end; moves++)
         {
-            int v;
+            int        v;
             struct pos pos1;
             if (!do_move(&pos1, pos, *moves))
                 continue;
@@ -1601,10 +1570,7 @@ static int probe_dtz_no_ep(const struct pos *pos, int *success)
     }
 }
 
-static const int wdl_to_dtz[] =
-{
-    -1, -101, 0, 101, 1
-};
+static const int wdl_to_dtz[] = {-1, -101, 0, 101, 1};
 
 /*
  * Probe the DTZ table for a particular position.
@@ -1633,20 +1599,20 @@ static const int wdl_to_dtz[] =
  * In short, if a move is available resulting in dtz + 50-move-counter <= 99,
  * then do not accept moves leading to dtz + 50-move-counter == 100.
  */
-static int probe_dtz(const struct pos *pos, int *success)
+static int probe_dtz(const struct pos* pos, int* success)
 {
     *success = 1;
-    int v = probe_dtz_no_ep(pos, success);
+    int v    = probe_dtz_no_ep(pos, success);
     if (*success == 0)
         return 0;
 
     if (pos->ep == 0)
         return v;
 
-    int v1 = -3;
-    uint16_t moves0[2];      // Max=2 possible en-passant captures.
-    uint16_t *moves = moves0;
-    uint16_t *end = gen_pawn_ep_captures(pos, moves);
+    int       v1 = -3;
+    uint16_t  moves0[2];  // Max=2 possible en-passant captures.
+    uint16_t* moves = moves0;
+    uint16_t* end   = gen_pawn_ep_captures(pos, moves);
     for (; moves < end; moves++)
     {
         struct pos pos1;
@@ -1686,10 +1652,10 @@ static int probe_dtz(const struct pos *pos, int *success)
             v = v1;
         else
         {
-            uint16_t moves0[MAX_MOVES];
-            uint16_t *moves = moves0;
-            uint16_t *end = gen_moves(pos, moves);
-            bool found = false;
+            uint16_t  moves0[MAX_MOVES];
+            uint16_t* moves = moves0;
+            uint16_t* end   = gen_moves(pos, moves);
+            bool      found = false;
             for (; moves < end; moves++)
             {
                 if (is_en_passant(pos, *moves))
@@ -1702,7 +1668,7 @@ static int probe_dtz(const struct pos *pos, int *success)
                 }
             }
             if (!found)
-                v = v1;     // Forced to play the losing ep capture.
+                v = v1;  // Forced to play the losing ep capture.
         }
     }
 
@@ -1713,27 +1679,26 @@ static unsigned dtz_to_wdl(int cnt50, int dtz)
 {
     int wdl = 0;
     if (dtz > 0)
-        wdl = (dtz + cnt50 <= 100? 2: 1);
+        wdl = (dtz + cnt50 <= 100 ? 2 : 1);
     else if (dtz < 0)
-        wdl = (-dtz + cnt50 <= 100? -2: -1);
+        wdl = (-dtz + cnt50 <= 100 ? -2 : -1);
     return wdl + 2;
 }
 
-static uint16_t probe_root(const struct pos *pos, int *score,
-    unsigned *results)
+static uint16_t probe_root(const struct pos* pos, int* score, unsigned* results)
 {
     int success;
     int dtz = probe_dtz(pos, &success);
     if (!success)
         return 0;
 
-    int16_t scores[MAX_MOVES];
-    uint16_t moves0[MAX_MOVES];
-    uint16_t *moves = moves0;
-    uint16_t *end = gen_moves(pos, moves);
-    size_t len = end - moves;
-    size_t num_draw = 0;
-    unsigned j = 0;
+    int16_t   scores[MAX_MOVES];
+    uint16_t  moves0[MAX_MOVES];
+    uint16_t* moves    = moves0;
+    uint16_t* end      = gen_moves(pos, moves);
+    size_t    len      = end - moves;
+    size_t    num_draw = 0;
+    unsigned  j        = 0;
     for (unsigned i = 0; i < len; i++)
     {
         struct pos pos1;
@@ -1768,12 +1733,12 @@ static uint16_t probe_root(const struct pos *pos, int *score,
         if (results != NULL)
         {
             unsigned res = 0;
-            res = TB_SET_WDL(res, dtz_to_wdl(pos->rule50, v));
-            res = TB_SET_FROM(res, move_from(moves[i]));
-            res = TB_SET_TO(res, move_to(moves[i]));
-            res = TB_SET_PROMOTES(res, move_promotes(moves[i]));
-            res = TB_SET_EP(res, is_en_passant(pos, moves[i]));
-            res = TB_SET_DTZ(res, (v < 0? -v: v));
+            res          = TB_SET_WDL(res, dtz_to_wdl(pos->rule50, v));
+            res          = TB_SET_FROM(res, move_from(moves[i]));
+            res          = TB_SET_TO(res, move_to(moves[i]));
+            res          = TB_SET_PROMOTES(res, move_promotes(moves[i]));
+            res          = TB_SET_EP(res, is_en_passant(pos, moves[i]));
+            res          = TB_SET_DTZ(res, (v < 0 ? -v : v));
             results[j++] = res;
         }
     }
@@ -1783,9 +1748,9 @@ static uint16_t probe_root(const struct pos *pos, int *score,
         *score = dtz;
 
     // Now be a bit smart about filtering out moves.
-    if (dtz > 0)        // winning (or 50-move rule draw)
+    if (dtz > 0)  // winning (or 50-move rule draw)
     {
-        int best = BEST_NONE;
+        int      best      = BEST_NONE;
         uint16_t best_move = 0;
         for (unsigned i = 0; i < len; i++)
         {
@@ -1794,15 +1759,15 @@ static uint16_t probe_root(const struct pos *pos, int *score,
                 continue;
             if (v > 0 && v < best)
             {
-                best = v;
+                best      = v;
                 best_move = moves[i];
             }
         }
-        return (best == BEST_NONE? 0: best_move);
+        return (best == BEST_NONE ? 0 : best_move);
     }
-    else if (dtz < 0)   // losing (or 50-move rule draw)
+    else if (dtz < 0)  // losing (or 50-move rule draw)
     {
-        int best = 0;
+        int      best      = 0;
         uint16_t best_move = 0;
         for (unsigned i = 0; i < len; i++)
         {
@@ -1811,13 +1776,13 @@ static uint16_t probe_root(const struct pos *pos, int *score,
                 continue;
             if (v < best)
             {
-                best = v;
+                best      = v;
                 best_move = moves[i];
             }
         }
-        return (best == 0? MOVE_CHECKMATE: best_move);
+        return (best == 0 ? MOVE_CHECKMATE : best_move);
     }
-    else                // drawing
+    else  // drawing
     {
         // Check for stalemate:
         if (num_draw == 0)
@@ -1842,12 +1807,10 @@ static uint16_t probe_root(const struct pos *pos, int *score,
     }
 }
 
-bool tb_init_impl(const char *path)
+bool tb_init_impl(const char* path)
 {
-    if (sizeof(uint64_t) != 8 ||        // Paranoid check
-            sizeof(uint32_t) != 4 ||
-            sizeof(uint16_t) != 2 ||
-            sizeof(uint8_t) != 1)
+    if (sizeof(uint64_t) != 8 ||  // Paranoid check
+        sizeof(uint32_t) != 4 || sizeof(uint16_t) != 2 || sizeof(uint8_t) != 1)
         return false;
     king_attacks_init();
     knight_attacks_init();
@@ -1860,68 +1823,60 @@ bool tb_init_impl(const char *path)
     return true;
 }
 
-unsigned tb_probe_wdl_impl(
-    uint64_t white,
-    uint64_t black,
-    uint64_t kings,
-    uint64_t queens,
-    uint64_t rooks,
-    uint64_t bishops,
-    uint64_t knights,
-    uint64_t pawns,
-    unsigned ep,
-    bool turn)
+unsigned tb_probe_wdl_impl(uint64_t white,
+                           uint64_t black,
+                           uint64_t kings,
+                           uint64_t queens,
+                           uint64_t rooks,
+                           uint64_t bishops,
+                           uint64_t knights,
+                           uint64_t pawns,
+                           unsigned ep,
+                           bool     turn)
 {
-    struct pos pos =
-    {
-        white,
-        black,
-        kings,
-        queens,
-        rooks,
-        bishops,
-        knights,
-        pawns,
-        0,
-        (uint8_t)ep,
-        turn
-    };
-    int success;
-    int v = probe_wdl(&pos, &success);
+    struct pos pos = {white,
+                      black,
+                      kings,
+                      queens,
+                      rooks,
+                      bishops,
+                      knights,
+                      pawns,
+                      0,
+                      (uint8_t) ep,
+                      turn};
+    int        success;
+    int        v = probe_wdl(&pos, &success);
     if (success == 0)
         return TB_RESULT_FAILED;
-    return (unsigned)(v + 2);
+    return (unsigned) (v + 2);
 }
 
-unsigned tb_probe_root_impl(
-    uint64_t white,
-    uint64_t black,
-    uint64_t kings,
-    uint64_t queens,
-    uint64_t rooks,
-    uint64_t bishops,
-    uint64_t knights,
-    uint64_t pawns,
-    unsigned rule50,
-    unsigned ep,
-    bool turn,
-    unsigned *results)
+unsigned tb_probe_root_impl(uint64_t  white,
+                            uint64_t  black,
+                            uint64_t  kings,
+                            uint64_t  queens,
+                            uint64_t  rooks,
+                            uint64_t  bishops,
+                            uint64_t  knights,
+                            uint64_t  pawns,
+                            unsigned  rule50,
+                            unsigned  ep,
+                            bool      turn,
+                            unsigned* results)
 {
-    struct pos pos =
-    {
-        white,
-        black,
-        kings,
-        queens,
-        rooks,
-        bishops,
-        knights,
-        pawns,
-        (uint8_t)rule50,
-        (uint8_t)ep,
-        turn
-    };
-    int dtz;
+    struct pos pos = {white,
+                      black,
+                      kings,
+                      queens,
+                      rooks,
+                      bishops,
+                      knights,
+                      pawns,
+                      (uint8_t) rule50,
+                      (uint8_t) ep,
+                      turn};
+    int        dtz;
     if (!is_valid(&pos))
         return TB_RESULT_FAILED;
     uint16_t move = probe_root(&pos, &dtz, results);
@@ -1932,12 +1887,12 @@ unsigned tb_probe_root_impl(
     if (move == MOVE_STALEMATE)
         return TB_RESULT_STALEMATE;
     unsigned res = 0;
-    res = TB_SET_WDL(res, dtz_to_wdl(rule50, dtz));
-    res = TB_SET_DTZ(res, (dtz < 0? -dtz: dtz));
-    res = TB_SET_FROM(res, move_from(move));
-    res = TB_SET_TO(res, move_to(move));
-    res = TB_SET_PROMOTES(res, move_promotes(move));
-    res = TB_SET_EP(res, is_en_passant(&pos, move));
+    res          = TB_SET_WDL(res, dtz_to_wdl(rule50, dtz));
+    res          = TB_SET_DTZ(res, (dtz < 0 ? -dtz : dtz));
+    res          = TB_SET_FROM(res, move_from(move));
+    res          = TB_SET_TO(res, move_to(move));
+    res          = TB_SET_PROMOTES(res, move_promotes(move));
+    res          = TB_SET_EP(res, is_en_passant(&pos, move));
     return res;
 }
 
@@ -1988,5 +1943,4 @@ uint64_t tb_pawn_attacks(unsigned sq, bool color)
     return pawn_attacks(sq, color);
 }
 
-#endif      /* TB_NO_HELPER_API */
-
+#endif /* TB_NO_HELPER_API */
