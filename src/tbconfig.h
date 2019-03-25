@@ -91,7 +91,7 @@
  * popcnt (currently supported on x86_64 architecture only) and otherwise
  * will fall back to a software implementation.
  */
-/* #define TB_NO_HW_POP_COUNT */
+#define TB_NO_HW_POP_COUNT
 
 /**
  * Define TB_USE_ATOMIC to use C++ 11 (or higher) <atomic> feature
